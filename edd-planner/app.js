@@ -140,7 +140,7 @@
       var s = ymd(d), inMonth = d.getMonth() === m.getMonth(), list = onDate(s);
       if (inMonth) monthList = monthList.concat(list);
       var bars = list.slice(0, 3).map(function (p) { return '<div class="mbar ' + p.type + '">' + esc(p.name.split(/\s+/)[0]) + '</div>'; }).join('');
-      if (list.length > 3) bars += '<div class="mmore">+' + (list.length - 3) + ' more</div>';
+      if (list.length > 3) bars += '<div class="mmore">+' + (list.length - 3) + '</div>';
       cells += '<button class="mcell' + (inMonth ? '' : ' out') + (s === t ? ' today' : '') + '" data-goto="' + s + '">' +
         '<span class="mnum">' + d.getDate() + '</span><div class="mbars">' + bars + '</div></button>';
     }
