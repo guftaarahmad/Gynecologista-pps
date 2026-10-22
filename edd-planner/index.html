@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EDD Planner</title>
+<meta name="theme-color" content="#be185d">
+<meta name="description" content="Personal delivery schedule for Prof. Dr. Sajida Guftaar">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <h1>EDD Planner</h1>
+    <p>Prof. Dr. Sajida Guftaar</p>
+  </div>
+  <div class="legend" aria-label="Colour legend">
+    <span><i class="dot normal"></i>Normal</span>
+    <span><i class="dot cs"></i>C-Sec</span>
+    <span><i class="dot undecided"></i>Not decided</span>
+  </div>
+</header>
+
+<main id="view"></main>
+
+<button id="fab" class="fab" aria-label="Add patient">+</button>
+
+<nav class="tabs">
+  <button data-tab="day" class="active"><span class="ti">☀</span>Day</button>
+  <button data-tab="week"><span class="ti">▦</span>Week</button>
+  <button data-tab="month"><span class="ti">▤</span>Month</button>
+  <button data-tab="patients"><span class="ti">☰</span>Patients</button>
+  <button data-tab="settings"><span class="ti">⚙</span>More</button>
+</nav>
+
+<div id="sheetWrap" class="sheet-wrap" hidden>
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="grip"></div>
+    <div id="sheetBody"></div>
+  </div>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<script src="db.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
