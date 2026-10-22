@@ -175,7 +175,14 @@
     var s = state.settings, hour = s.reminderHour == null ? 20 : s.reminderHour, opts = '';
     for (var h = 5; h <= 23; h++) opts += '<option value="' + h + '"' + (h === hour ? ' selected' : '') + '>' + ((h % 12) || 12) + ':00 ' + (h < 12 ? 'AM' : 'PM') + '</option>';
     var notifState = !('Notification' in window) ? 'not supported' : Notification.permission;
-    $view.innerHTML =
+    var installPanel = isInstalled() ? '' :
+      '<div class="panel"><h2>📲 Install on this phone</h2>' +
+      (installEvt ? '<p>Add EDD Planner to the home screen so it opens like a normal app, even without internet.</p><button class="btn block" id="installBtn2">Install app</button>' :
+      '<p>To add EDD Planner to the home screen:</p><ol class="steps">' +
+      '<li>Make sure this page is open in the <b>Chrome</b> app (not inside WhatsApp or Gmail). If not, tap ⋮ and choose <b>Open in Chrome</b>.</li>' +
+      '<li>In Chrome, tap the <b>⋮</b> menu at the top right.</li>' +
+      '<li>Tap <b>Install app</b> or <b>Add to Home screen</b>, then <b>Install</b>.</li></ol>') + '</div>';
+    $view.innerHTML = installPanel +
       '<div class="panel"><h2>🔔 Daily reminder</h2><p>Every evening the app tells you how many deliveries are expected tomorrow.</p>' +
       '<div class="row"><label for="remOn">Reminder on</label><input type="checkbox" class="switch" id="remOn"' + (s.reminderOn ? ' checked' : '') + '></div>' +
       '<div class="row"><label for="remHour">Remind me after</label><select id="remHour" style="padding:8px;border-radius:10px;border:1px solid var(--line)">' + opts + '</select></div>' +
@@ -192,6 +199,7 @@
 
       '<div class="panel"><h2>About</h2><p>EDD Planner · made for Prof. Dr. Sajida Guftaar for personal use. Works fully offline; no account and no cloud storage.</p></div>';
 
+    if (document.getElementById('installBtn2')) document.getElementById('installBtn2').addEventListener('click', promptInstall);
     document.getElementById('remOn').addEventListener('change', function (e) { toggleReminder(e.target.checked, e.target); });
     document.getElementById('remHour').addEventListener('change', function (e) {
       state.settings.reminderHour = +e.target.value; state.settings.lastNotified = null; saveSettings(); toast('Reminder time saved');
@@ -428,6 +436,24 @@
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') { applyHash(); render(); checkReminderNow(); }
   });
+
+  /* ---------- install ---------- */
+  var installEvt = null;
+  function isInstalled() { return matchMedia('(display-mode: standalone)').matches || navigator.standalone; }
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); installEvt = e;
+    document.getElementById('installBar').hidden = false;
+    if (state.tab === 'settings') render();
+  });
+  window.addEventListener('appinstalled', function () {
+    installEvt = null; document.getElementById('installBar').hidden = true; toast('Installed – open it from the home screen');
+  });
+  function promptInstall() {
+    if (!installEvt) { state.tab = 'settings'; render(); return; }
+    installEvt.prompt();
+    installEvt.userChoice.then(function () { installEvt = null; document.getElementById('installBar').hidden = true; });
+  }
+  document.getElementById('installBtn').addEventListener('click', promptInstall);
 
   /* ---------- start ---------- */
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
