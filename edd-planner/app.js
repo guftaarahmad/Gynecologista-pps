@@ -78,8 +78,11 @@
     if (metaMode === 'edd') meta = 'EDD ' + fmt(p.edd) + (p.delivered ? '' : ' · ' + relLabel(p.edd));
     else meta = gaOn(p.edd, ymd(today0())) ? 'GA today ' + gaOn(p.edd, ymd(today0())) : '';
     if (p.delivered) meta = 'Delivered ' + fmt(p.deliveredOn) + ' · EDD was ' + fmtShort(p.edd);
+    var ids = [p.mr ? 'MR# ' + p.mr : '', metaMode === 'search' ? p.obs : '', metaMode === 'search' ? p.phone : ''].filter(Boolean).join(' · ');
+    if (metaMode === 'search' && !p.delivered) meta = 'EDD ' + fmt(p.edd) + ' · ' + relLabel(p.edd);
     return '<button class="card ' + p.type + (p.delivered ? ' done' : '') + '" data-open="' + p.id + '">' +
-      '<div class="main"><div class="name">' + esc(p.name) + '</div><div class="meta">' + esc(meta) + '</div></div>' +
+      '<div class="main"><div class="name">' + esc(p.name) + '</div>' + (ids ? '<div class="ids">' + esc(ids) + '</div>' : '') +
+      '<div class="meta">' + esc(meta) + '</div></div>' +
       '<span class="badge ' + (p.delivered ? 'delivered' : p.type) + '">' + (p.delivered ? 'Delivered' : TYPE_LABEL[p.type]) + '</span></button>';
   }
 
@@ -158,16 +161,36 @@
     if (state.plist === 'upcoming') list = active().filter(function (p) { return p.edd >= t; }).sort(function (a, b) { return a.edd.localeCompare(b.edd); });
     else if (state.plist === 'overdue') list = od.sort(function (a, b) { return a.edd.localeCompare(b.edd); });
     else list = state.patients.filter(function (p) { return p.delivered; }).sort(function (a, b) { return (b.deliveredOn || '').localeCompare(a.deliveredOn || ''); });
-    if (q) list = list.filter(function (p) { return (p.name + ' ' + (p.phone || '') + ' ' + (p.obs || '') + ' ' + (p.notes || '')).toLowerCase().indexOf(q) >= 0; });
     var seg = function (k, label) { return '<button class="' + (state.plist === k ? 'on' : '') + '" data-plist="' + k + '">' + label + '</button>'; };
-    $view.innerHTML = '<input class="search" id="search" type="search" placeholder="Search name, phone, notes…" value="' + esc(state.search) + '">' +
-      '<div class="seg">' + seg('upcoming', 'Upcoming') + seg('overdue', 'Past EDD' + (od.length ? ' (' + od.length + ')' : '')) + seg('delivered', 'Delivered') + '</div>' +
-      (list.length ? list.map(function (p) { return cardHtml(p, 'edd'); }).join('') :
-        '<div class="empty"><div class="big">📋</div>' + (q ? 'No match found.' : state.plist === 'upcoming' ? 'No upcoming patients yet. Tap + to add one.' : state.plist === 'overdue' ? 'Nobody is past EDD. 👍' : 'No delivered patients yet.') + '</div>');
+    var body;
+    if (q) {
+      // Searching looks through every record: upcoming, past EDD and delivered.
+      list = searchAll(q);
+      body = '<div class="found">' + (list.length ? list.length + (list.length === 1 ? ' patient' : ' patients') + ' found' : '') + '</div>' +
+        list.map(function (p) { return cardHtml(p, 'search'); }).join('');
+    } else {
+      body = '<div class="seg">' + seg('upcoming', 'Upcoming') + seg('overdue', 'Past EDD' + (od.length ? ' (' + od.length + ')' : '')) + seg('delivered', 'Delivered') + '</div>' +
+        list.map(function (p) { return cardHtml(p, 'edd'); }).join('');
+    }
+    $view.innerHTML = '<input class="search" id="search" type="search" placeholder="🔍 Search by name or MR#…" value="' + esc(state.search) + '">' +
+      (list.length ? body :
+        '<div class="empty"><div class="big">📋</div>' + (q ? 'No patient found for “' + esc(state.search) + '”.' : state.plist === 'upcoming' ? 'No upcoming patients yet. Tap + to add one.' : state.plist === 'overdue' ? 'Nobody is past EDD. 👍' : 'No delivered patients yet.') + '</div>');
     var s = document.getElementById('search');
     s.addEventListener('input', function () {
       state.search = s.value; var pos = s.selectionStart; renderPatients();
       var n = document.getElementById('search'); n.focus(); n.setSelectionRange(pos, pos);
+    });
+  }
+
+  function normMr(v) { return String(v || '').toLowerCase().replace(/[\s\-\/#.]/g, ''); }
+  function searchAll(q) {
+    var words = q.trim().split(/\s+/), qMr = normMr(q);
+    return state.patients.filter(function (p) {
+      var hay = (p.name + ' ' + (p.mr || '') + ' ' + (p.phone || '') + ' ' + (p.obs || '')).toLowerCase();
+      var byWords = words.every(function (w) { return hay.indexOf(w) >= 0; });
+      return byWords || (qMr && normMr(p.mr).indexOf(qMr) >= 0);
+    }).sort(function (a, b) {
+      return (a.delivered - b.delivered) || (a.delivered ? (b.deliveredOn || '').localeCompare(a.deliveredOn || '') : a.edd.localeCompare(b.edd));
     });
   }
 
@@ -228,6 +251,7 @@
     if (!p) return;
     var ga = gaOn(p.edd, ymd(today0()));
     var rows = [
+      ['MR#', p.mr || ''],
       ['EDD', fmt(p.edd) + (p.delivered ? '' : ' (' + relLabel(p.edd) + ')')],
       ['GA today', p.delivered ? '' : ga],
       ['EDD given on', p.givenOn ? fmt(p.givenOn) : ''],
@@ -282,6 +306,7 @@
     var hasOptional = p.phone || p.obs || p.notes;
     openSheet('<h2>' + (isNew ? 'Add patient' : 'Edit patient') + '</h2><form id="pf" autocomplete="off">' +
       '<div class="field"><label for="fName">Patient name *</label><input id="fName" required value="' + esc(p.name || '') + '" placeholder="e.g. Ayesha Khan"></div>' +
+      '<div class="field"><label for="fMr">MR# (optional)</label><input id="fMr" value="' + esc(p.mr || '') + '" placeholder="Medical record number"></div>' +
       '<div class="two"><div class="field"><label for="fEdd">Expected delivery date *</label><input type="date" id="fEdd" required value="' + (p.edd || '') + '"></div>' +
       '<div class="field"><label for="fGiven">Date given</label><input type="date" id="fGiven" value="' + (p.givenOn || '') + '"></div></div>' +
       '<div class="field"><label for="fLmp">Or calculate EDD from LMP</label><input type="date" id="fLmp"><div class="hint">Picking LMP fills EDD automatically (LMP + 280 days).</div></div>' +
@@ -299,10 +324,14 @@
       e.preventDefault();
       var name = document.getElementById('fName').value.trim(), edd = document.getElementById('fEdd').value;
       if (!name || !edd) { toast('Name and EDD are required'); return; }
+      var mr = document.getElementById('fMr').value.trim();
+      var dup = mr && state.patients.find(function (x) { return x !== p && normMr(x.mr) === normMr(mr); });
+      if (dup && !confirm('MR# ' + mr + ' is already used for ' + dup.name + ' (EDD ' + fmt(dup.edd) + ').\nSave anyway?')) return;
       var rec = isNew ? { id: uid(), createdAt: new Date().toISOString(), delivered: false } : p;
       rec.name = name; rec.edd = edd;
       rec.givenOn = document.getElementById('fGiven').value || '';
       rec.type = ($sheetBody.querySelector('input[name=type]:checked') || {}).value || 'undecided';
+      rec.mr = mr;
       rec.obs = document.getElementById('fObs').value.trim();
       rec.phone = document.getElementById('fPhone').value.trim();
       rec.notes = document.getElementById('fNotes').value.trim();
@@ -396,6 +425,9 @@
     render(); window.scrollTo(0, 0);
   });
   document.getElementById('fab').addEventListener('click', function () { showForm(null); });
+  document.getElementById('searchBtn').addEventListener('click', function () {
+    state.tab = 'patients'; render(); window.scrollTo(0, 0); document.getElementById('search').focus();
+  });
 
   $view.addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b) return;

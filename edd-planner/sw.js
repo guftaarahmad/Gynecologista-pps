@@ -1,5 +1,5 @@
 importScripts('db.js');
-var CACHE = 'edd-planner-v2';
+var CACHE = 'edd-planner-v3';
 var FILES = ['./', 'index.html', 'app.css', 'app.js', 'db.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];
 

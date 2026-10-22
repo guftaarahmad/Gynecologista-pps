@@ -35,6 +35,8 @@ button { cursor: pointer; }
   padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
 }
+.topbar > div:first-child { flex: 1; min-width: 0; }
+.search-btn { width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255,255,255,.18); font-size: 18px; flex: none; }
 .topbar h1 { margin: 0; font-size: 19px; letter-spacing: .2px; }
 .topbar p { margin: 0; font-size: 12px; opacity: .85; }
 .legend { display: flex; flex-direction: column; gap: 1px; font-size: 11px; }
@@ -80,6 +82,8 @@ main { padding: 12px 12px 24px; max-width: 760px; margin: 0 auto; }
 .card.undecided { border-left-color: var(--undecided); }
 .card .main { flex: 1; min-width: 0; }
 .card .name { font-weight: 650; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .ids { font-size: 13px; font-weight: 600; color: var(--brand-dark); }
+.found { font-size: 13px; color: var(--muted); margin: 0 4px 8px; font-weight: 600; }
 .card .meta { font-size: 13px; color: var(--muted); }
 .card.done { opacity: .7; }
 .badge { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
